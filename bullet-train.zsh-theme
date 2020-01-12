@@ -558,7 +558,7 @@ prompt_kctx() {
   if command -v kubectl > /dev/null 2>&1; then
     if [[ -f $BULLETTRAIN_KCTX_KCONFIG ]]; then
       prompt_segment $BULLETTRAIN_KCTX_BG $BULLETTRAIN_KCTX_FG $BULLETTRAIN_KCTX_PREFIX" $(cat $BULLETTRAIN_KCTX_KCONFIG|grep current-context| awk '{print $2}')"
-    fi  
+    fi
   fi
 }
 
@@ -765,10 +765,20 @@ PROMPT="$PROMPT"'$(prompt_chars)%{$reset_color%}'
  #
 
  # Bullet Train Functions
+ #FIXME: Last command return value storage
+ #        - Best: Stop writing to a file, use a global variable and
+ #                parameter expansion to check instead of (the
+ #                problematic across environents) grep.
+ #        - Temporary: At least assign state file path to a variable
+ #                     instead of writing it out-additionally create
+ #                     file/parent folder in setup instead of checking
+ #                     and trying to mkdir/touch in prompt_[SECTION] 
+ #                     functions.
   prompt_multi(){
-    if [[ ! -f $ZSH/.tmp ]]; then
-        touch $ZSH/.tmp ||
-            print -P "Bullettrain: %F{red}prompt_multi error.%f"
+    if [[ ! -f "$TMPPREFIX/.tmp" ]]; then
+        mkdir -p ${TMPPREFIX} \
+          && touch "$TMPPREFIX/.tmp" \
+          || print -P "Bullettrain: %F{red}prompt_multi error.%f"
     fi
 
     if [[ $UID -eq 0 ]]; then
@@ -785,7 +795,7 @@ PROMPT="$PROMPT"'$(prompt_chars)%{$reset_color%}'
         local date='%D{%T}'
     fi
     if
-    trigger=$(grep -c "." $ZSH/.tmp)
+    trigger=$(grep -c "." "${TMPPREFIX}/.tmp")
 
     ### RET ERROR BLOCK ###
     if [[ $RETVAL -ne 0 &&  $trigger -lt 2 ]]; then
@@ -830,10 +840,10 @@ PROMPT="$PROMPT"'$(prompt_chars)%{$reset_color%}'
   {
     RETVAL=$?
     if [[ $RETVAL -ne 0  ]]; then
-      echo '.' >> $ZSH/.tmp
+      echo '.' >> "${TMPPREFIX}/.tmp"
     fi
     if [[ $RETVAL  ]]; then
-      echo '' > $ZSH/.tmp
+      echo '' > "${TMPPREFIX}/.tmp"
     fi
     for segment in $BULLETTRAIN_PROMPT_ORDER; do
       prompt_$segment
